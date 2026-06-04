@@ -24,6 +24,7 @@ from ui.preview_handlers import (
     render_docx_preview, render_xlsx_preview, render_pptx_preview,
     get_audio_info, get_video_info
 )
+from ui.widgets.icon_button import _load_svg
 import traceback
 
 
@@ -948,6 +949,32 @@ class PreviewWindow(QDialog):
         info_header_layout.addWidget(self.info_title)
         info_header_layout.addStretch()
 
+        # Кнопка "Заменить оригинал"
+        self.replace_btn = QPushButton(" Заменить оригинал")
+        self.replace_btn.clicked.connect(self._replace_original)
+        self.replace_btn.setEnabled(False)
+        self.replace_btn.setIcon(_load_svg("swap", "#FFFFFF", 16))
+        self.replace_btn.setIconSize(QSize(16, 16))
+        self.replace_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #5B8FEF;
+                color: white;
+                border: none;
+                padding: 6px 16px;
+                border-radius: 8px;
+                font-weight: bold;
+                font-size: 9pt;
+            }
+            QPushButton:hover {
+                background-color: #4A7DE0;
+            }
+            QPushButton:disabled {
+                background-color: #1E1E24;
+                color: #55555A;
+            }
+        """)
+        info_header_layout.addWidget(self.replace_btn)
+
         self.info_count = QLabel("")
         self.info_count.setStyleSheet("font-size: 9pt; color: #8B8B95;")
         info_header_layout.addWidget(self.info_count)
@@ -975,6 +1002,20 @@ class PreviewWindow(QDialog):
             QTreeWidget::item:selected {
                 background-color: #5B8FEF;
                 color: #FFFFFF;
+            }
+            QTreeWidget::indicator {
+                width: 16px;
+                height: 16px;
+                border: 2px solid #5B8FEF;
+                border-radius: 3px;
+                background-color: transparent;
+            }
+            QTreeWidget::indicator:checked {
+                background-color: #5B8FEF;
+                border: 2px solid #5B8FEF;
+            }
+            QTreeWidget::indicator:hover {
+                border-color: #8BB5FF;
             }
             QHeaderView::section {
                 background-color: #141416;
@@ -1089,14 +1130,20 @@ class PreviewWindow(QDialog):
             tr("preview.total_files", "Всего файлов: {count}").format(count=len(all_files))
         )
 
+        # Сбрасываем кнопку замены
+        self.replace_btn.setEnabled(False)
+
         for i, f in enumerate(all_files):
             item = QTreeWidgetItem()
             if i == 0:
                 item.setText(0, "★")
                 item.setToolTip(0, tr("preview.original_tooltip", "Оригинал"))
+                item.setFlags(item.flags() & ~Qt.ItemIsUserCheckable)
             else:
                 item.setText(0, "○")
                 item.setToolTip(0, tr("preview.copy_tooltip", "Копия #{n}").format(n=i))
+                item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+                item.setCheckState(0, Qt.Unchecked)
 
             item.setText(1, f.name)
             try:
@@ -1115,9 +1162,56 @@ class PreviewWindow(QDialog):
 
             self.files_tree.addTopLevelItem(item)
 
+        # Подключаем обработчик изменения состояния чекбоксов
+        self.files_tree.itemChanged.connect(self._on_file_check_changed)
+
         # Автоширина
         for col in range(5):
             self.files_tree.resizeColumnToContents(col)
+
+    def _on_file_check_changed(self, item, column):
+        """Обрабатывает изменение состояния чекбокса в таблице."""
+        if column != 0:
+            return
+        # Считаем, сколько чекбоксов отмечено
+        checked_count = 0
+        for i in range(self.files_tree.topLevelItemCount()):
+            it = self.files_tree.topLevelItem(i)
+            if it.flags() & Qt.ItemIsUserCheckable and it.checkState(0) == Qt.Checked:
+                checked_count += 1
+        # Включаем кнопку замены, если отмечен ровно один дубликат
+        self.replace_btn.setEnabled(checked_count == 1)
+
+    def _replace_original(self):
+        """Заменяет оригинал на выбранный дубликат."""
+        if self.current_group < 0 or self.current_group >= len(self.preview_data):
+            return
+
+        # Находим отмеченный элемент
+        checked_index = -1
+        for i in range(self.files_tree.topLevelItemCount()):
+            item = self.files_tree.topLevelItem(i)
+            if item.flags() & Qt.ItemIsUserCheckable and item.checkState(0) == Qt.Checked:
+                checked_index = i
+                break
+
+        if checked_index < 0:
+            return
+
+        hash_val, original, dups = self.preview_data[self.current_group]
+        all_files = [original] + dups
+
+        if checked_index >= len(all_files):
+            return
+
+        # Меняем местами: выбранный файл становится новым оригиналом
+        new_original = all_files[checked_index]
+        new_dups = [original] + [d for i, d in enumerate(dups) if i + 1 != checked_index]
+
+        self.preview_data[self.current_group] = (hash_val, new_original, new_dups)
+
+        # Обновляем отображение
+        self._show_group(self.current_group)
 
     def _on_file_in_group_clicked(self, item, column):
         """Обрабатывает клик по файлу в таблице группы."""
