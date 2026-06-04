@@ -28,6 +28,8 @@ class ResultsPage(QWidget):
         super().__init__(parent)
         self.config = config
         self.scanner = None
+        self._originals = {}  # hash -> original file path
+        self._bulk_update = False  # флаг массового обновления
         self._setup_ui()
     
     def _setup_ui(self):
@@ -511,7 +513,17 @@ class ResultsPage(QWidget):
                 file_item = QTreeWidgetItem()
                 file_item.setText(0, "")
                 file_item.setText(1, "")
-                file_item.setText(2, file_path.name)
+                
+                # Отметка оригинала
+                is_orig = str(file_path) == str(original)
+                if is_orig:
+                    file_item.setText(2, tr("results.original_label", "★ Оригинал") + "  " + file_path.name)
+                    file_item.setToolTip(2, tr("results.original_tooltip", "Этот файл является оригиналом в группе"))
+                    file_item.setForeground(2, QColor("#FBBF24"))  # золотой
+                else:
+                    file_item.setText(2, file_path.name)
+                    file_item.setToolTip(2, file_path.name)
+                
                 try:
                     file_item.setText(3, format_size(file_path.stat().st_size))
                     file_item.setText(4, format_date(
@@ -523,19 +535,20 @@ class ResultsPage(QWidget):
                 file_item.setText(5, hash_val[:16] + "...")
                 file_item.setText(6, str(file_path))
                 
-                file_item.setToolTip(2, file_path.name)
-                file_item.setToolTip(6, str(file_path))
-                
                 # Визуальная индикация hardlink
                 if is_hardlink(str(file_path)):
-                    file_item.setText(2, file_path.name)
                     file_item.setForeground(2, QColor("#F59E0B"))  # янтарный
                     file_item.setToolTip(2, tr("results.hardlink_tooltip_item", "Hardlink (st_nlink > 1)\n{name}").format(name=file_path.name))
                 
-                file_item.setFlags(file_item.flags() | Qt.ItemIsUserCheckable)
-                file_item.setCheckState(0, Qt.Unchecked)
+                if is_orig:
+                    # Оригинал — чекбокс отключён, чтобы нельзя было случайно удалить
+                    file_item.setFlags(file_item.flags() & ~Qt.ItemIsUserCheckable)
+                else:
+                    file_item.setFlags(file_item.flags() | Qt.ItemIsUserCheckable)
+                    file_item.setCheckState(0, Qt.Unchecked)
                 file_item.setData(0, Qt.UserRole, "file")
                 file_item.setData(0, Qt.UserRole + 1, str(file_path))
+                file_item.setData(0, Qt.UserRole + 2, is_orig)  # флаг оригинала
                 
                 group_item.addChild(file_item)
         
@@ -662,7 +675,9 @@ class ResultsPage(QWidget):
     
     def _toggle_select_all(self, state: int):
         """Выбирает/снимает выбор со всех элементов."""
-        checked = state == Qt.Checked
+        checked = bool(state)
+        # Устанавливаем флаг, чтобы _on_item_changed не обрабатывал изменения
+        self._bulk_update = True
         for i in range(self.tree.topLevelItemCount()):
             group_item = self.tree.topLevelItem(i)
             if group_item is None:
@@ -672,11 +687,14 @@ class ResultsPage(QWidget):
                 file_item = group_item.child(j)
                 if file_item is None:
                     continue
-                file_item.setCheckState(0, Qt.Checked if checked else Qt.Unchecked)
+                # Пропускаем оригиналы — у них чекбокс отключён
+                if file_item.flags() & Qt.ItemIsUserCheckable:
+                    file_item.setCheckState(0, Qt.Checked if checked else Qt.Unchecked)
+        self._bulk_update = False
     
     def _on_item_changed(self, item: QTreeWidgetItem, column: int):
         """Обрабатывает изменение состояния элемента."""
-        if column == 0:
+        if column == 0 and not self._bulk_update:
             # Если это группа, обновляем все дочерние элементы
             if item.data(0, Qt.UserRole) == "group":
                 checked = item.checkState(0) == Qt.Checked
@@ -685,7 +703,9 @@ class ResultsPage(QWidget):
                 for i in range(item.childCount()):
                     child = item.child(i)
                     if child is not None:
-                        child.setCheckState(0, Qt.Checked if checked else Qt.Unchecked)
+                        # Пропускаем оригиналы — у них чекбокс отключён
+                        if child.flags() & Qt.ItemIsUserCheckable:
+                            child.setCheckState(0, Qt.Checked if checked else Qt.Unchecked)
                 self.tree.blockSignals(False)
     
     def _get_selected_files(self) -> list:
@@ -750,12 +770,38 @@ class ResultsPage(QWidget):
         
         menu.addSeparator()
         
+        # Сделать оригиналом (только для не-оригиналов)
+        is_orig = item.data(0, Qt.UserRole + 2) if item.data(0, Qt.UserRole) == "file" else False
+        if item.data(0, Qt.UserRole) == "file" and not is_orig:
+            make_orig_action = QAction(tr("results.context_make_original", "Сделать оригиналом"), self)
+            make_orig_action.triggered.connect(lambda: self._make_original(item.text(6)))
+            menu.addAction(make_orig_action)
+        
+        menu.addSeparator()
+        
         delete_action = QAction(tr("results.context_delete", "Удалить файл"), self)
         delete_action.triggered.connect(lambda: self._delete_file(item.text(6)))
         delete_action.setStyleSheet("color: #EF4444;")
         menu.addAction(delete_action)
         
         menu.exec(self.tree.viewport().mapToGlobal(pos))
+    
+    def _make_original(self, path: str):
+        """Назначает файл новым оригиналом в своей группе."""
+        if not self.scanner or not self.scanner.preview_data:
+            return
+        
+        for i, (hash_val, original, dups) in enumerate(self.scanner.preview_data):
+            all_files = [original] + dups
+            str_paths = [str(f) for f in all_files]
+            if path in str_paths:
+                # Меняем местами: новый оригинал становится оригиналом, старый уходит в дубликаты
+                new_dups = [original] + [d for d in dups if str(d) != path]
+                new_original = Path(path)
+                self.scanner.preview_data[i] = (hash_val, new_original, new_dups)
+                break
+        
+        self._populate_tree()
     
     def _open_file(self, path: str):
         """Открывает файл в системном приложении."""
@@ -773,9 +819,27 @@ class ResultsPage(QWidget):
         if path:
             QApplication.clipboard().setText(path)
     
+    def _is_original(self, path: str) -> bool:
+        """Проверяет, является ли файл оригиналом в какой-либо группе."""
+        if not self.scanner or not self.scanner.preview_data:
+            return False
+        for hash_val, original, dups in self.scanner.preview_data:
+            if str(original) == path:
+                return True
+        return False
+    
     def _delete_file(self, path: str):
         """Удаляет файл с подтверждением."""
         if not path or not os.path.exists(path):
+            return
+        
+        # Защита оригинала
+        if self._is_original(path):
+            QMessageBox.warning(
+                self,
+                tr("results.original_delete_blocked_title", "Защита оригинала"),
+                tr("results.original_delete_blocked", "Оригинал нельзя удалить.\nСнимите отметку с оригинала или выберите другой файл как оригинал.")
+            )
             return
         
         reply = QMessageBox.question(
@@ -826,7 +890,12 @@ class ResultsPage(QWidget):
         if reply == QMessageBox.Yes:
             deleted = 0
             errors = 0
+            skipped = 0
             for path in files:
+                # Пропускаем оригиналы
+                if self._is_original(path):
+                    skipped += 1
+                    continue
                 try:
                     if os.path.exists(path):
                         os.remove(path)
@@ -835,6 +904,8 @@ class ResultsPage(QWidget):
                     errors += 1
             
             msg = tr("results.deleted_multiple_msg", "Удалено файлов: {deleted}").format(deleted=deleted)
+            if skipped:
+                msg += tr("results.deleted_skipped", "\nПропущено оригиналов: {skipped}").format(skipped=skipped)
             if errors:
                 msg += tr("results.deleted_errors", "\nОшибок: {errors}").format(errors=errors)
             QMessageBox.information(self, tr("results.result_title", "Результат"), msg)

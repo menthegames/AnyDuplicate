@@ -41,7 +41,7 @@ class MainWindow(QMainWindow):
         self.setWindowFlags(Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground, False)
 
-        self.setWindowTitle("AnyDuplicate Advanced")
+        self.setWindowTitle("AnyDuplicate Advanced — Pro" if self.license_manager.is_pro else "AnyDuplicate Advanced — Free")
         self.setMinimumSize(1000, 680)
         self.resize(1200, 800)
 
@@ -78,6 +78,7 @@ class MainWindow(QMainWindow):
         self.title_bar.minimize_signal.connect(self.showMinimized)
         self.title_bar.maximize_signal.connect(self._toggle_maximize)
         self.title_bar.close_signal.connect(self.close)
+        self.title_bar.set_version_label(self.license_manager.is_pro)
         main_layout.addWidget(self.title_bar)
 
         # Основной контент: боковая панель + страницы
@@ -88,13 +89,15 @@ class MainWindow(QMainWindow):
         # Боковая панель
         self.sidebar = Sidebar()
         self.sidebar.section_changed.connect(self._switch_section)
+        self.sidebar.pro_section_clicked.connect(self._show_license)
+        self.sidebar.set_pro(self.license_manager.is_pro)
         content_layout.addWidget(self.sidebar)
 
         # Стек страниц
         self.stack = QStackedWidget()
         self.stack.setProperty("contentStack", True)
 
-        self.main_page = MainPage(self.config)
+        self.main_page = MainPage(self.config, self.license_manager)
         self.results_page = ResultsPage(self.config)
         self.history_page = HistoryPage(self.config)
         self.dashboard_page = DashboardPage()

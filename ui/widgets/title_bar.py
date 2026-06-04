@@ -132,6 +132,15 @@ class TitleBar(QWidget):
         # Растяжка
         self._layout.addStretch()
         
+        # Метка версии (Pro/Free)
+        self.version_label = QLabel("")
+        version_font = QFont()
+        version_font.setPointSize(9)
+        version_font.setWeight(QFont.Weight.Medium)
+        self.version_label.setFont(version_font)
+        self.version_label.setFixedHeight(20)
+        self._layout.addWidget(self.version_label)
+        
         # Кнопки управления с SVG-иконками
         self._min_btn = TitleBarButton("minimize", hover_color="#8B8B95")
         self._min_btn.clicked.connect(self.minimize_signal.emit)
@@ -157,6 +166,15 @@ class TitleBar(QWidget):
     
     def setTitle(self, title: str):
         self._title_label.setText(title)
+    
+    def set_version_label(self, pro: bool):
+        """Устанавливает метку версии: Pro (синий) или Free (серый)."""
+        if pro:
+            self.version_label.setText("Pro")
+            self.version_label.setStyleSheet("color: #5B8FEF;")
+        else:
+            self.version_label.setText("Free")
+            self.version_label.setStyleSheet("color: #8B8B95;")
     
     def updateMaximizeIcon(self, is_maximized: bool):
         """Обновляет иконку кнопки разворота окна."""

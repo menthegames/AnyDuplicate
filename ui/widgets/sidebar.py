@@ -2,7 +2,7 @@
 Боковая панель навигации AnyDuplicate Advanced
 Разделы: Поиск, Результаты, История, Настройки
 """
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QSizePolicy
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QSizePolicy
 from PySide6.QtCore import Qt, Signal, QSize, QByteArray
 from PySide6.QtGui import QFont, QIcon, QPixmap, QPainter, QColor, QPen, QCursor
 from PySide6.QtSvg import QSvgRenderer
@@ -145,6 +145,7 @@ class Sidebar(QWidget):
     """Боковая панель навигации."""
     
     section_changed = Signal(str)  # section_id
+    pro_section_clicked = Signal()  # клик по Pro/Активировать Pro
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -203,6 +204,17 @@ class Sidebar(QWidget):
         
         layout.addStretch()
         
+        # --- Pro / Активировать Pro секция ---
+        self._pro_layout = QHBoxLayout()
+        self._pro_layout.setContentsMargins(0, 0, 0, 0)
+        self._pro_layout.setSpacing(0)
+        
+        self._pro_btn = QPushButton()
+        self._pro_btn.setCursor(Qt.PointingHandCursor)
+        self._pro_btn.setMinimumHeight(44)
+        self._pro_btn.clicked.connect(self.pro_section_clicked.emit)
+        layout.addWidget(self._pro_btn)
+        
         # Версия внизу
         version_label = QLabel("v3.0.0")
         version_label.setStyleSheet("color: #5A5A60; font-size: 11px; padding: 8px 12px;")
@@ -216,6 +228,46 @@ class Sidebar(QWidget):
                 border-right: 1px solid #2A2A30;
             }
         """)
+    
+    def set_pro(self, is_pro: bool):
+        """Обновляет кнопку Pro/Активировать Pro в зависимости от статуса лицензии."""
+        if is_pro:
+            self._pro_btn.setText(tr("nav.pro", "  Pro"))
+            self._pro_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: rgba(91, 143, 239, 0.1);
+                    color: #5B8FEF;
+                    border: 1px solid rgba(91, 143, 239, 0.3);
+                    border-radius: 8px;
+                    text-align: left;
+                    padding: 8px 12px;
+                    font-size: 13px;
+                    font-weight: 600;
+                }
+                QPushButton:hover {
+                    background-color: rgba(91, 143, 239, 0.2);
+                    border: 1px solid rgba(91, 143, 239, 0.5);
+                }
+            """)
+        else:
+            self._pro_btn.setText(tr("nav.activate_pro", "  Активировать Pro"))
+            self._pro_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: transparent;
+                    color: #8B8B95;
+                    border: 1px solid #2A2A30;
+                    border-radius: 8px;
+                    text-align: left;
+                    padding: 8px 12px;
+                    font-size: 13px;
+                    font-weight: 500;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 0.05);
+                    border: 1px solid #5B8FEF;
+                    color: #5B8FEF;
+                }
+            """)
     
     def retranslate_ui(self):
         """Обновляет текст кнопок навигации при смене языка."""

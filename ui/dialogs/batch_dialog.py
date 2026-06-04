@@ -250,7 +250,13 @@ class BatchDialog(QDialog):
             # Файлы в группе
             for file_path in all_files:
                 file_item = QTreeWidgetItem()
-                file_item.setText(0, "")
+                is_orig = (file_path == original)
+                if is_orig:
+                    file_item.setText(0, "★")
+                    file_item.setToolTip(0, tr("batch.original_tooltip", "Этот файл является оригиналом — действие не применяется"))
+                    file_item.setForeground(0, QColor("#FBBF24"))
+                else:
+                    file_item.setText(0, "")
                 file_item.setText(1, "")
                 file_item.setText(2, file_path.name)
                 try:
@@ -259,6 +265,8 @@ class BatchDialog(QDialog):
                     file_item.setText(3, "—")
                 file_item.setText(4, "")
                 file_item.setForeground(2, QColor("#A0A0A8"))
+                if is_orig:
+                    file_item.setForeground(2, QColor("#FBBF24"))
                 group_item.addChild(file_item)
 
         # Раскрываем первую группу

@@ -224,8 +224,10 @@ TRANSLATIONS = {
         "results.delete_result": "Удалено файлов: {deleted}",
         "results.deleted_multiple_msg": "Удалено файлов: {deleted}",
         "results.deleted_errors": "\nОшибок: {errors}",
+        "results.deleted_skipped": "\nПропущено оригиналов: {skipped}",
         "results.delete_errors": "\nОшибок: {errors}",
         "results.result_title": "Результат",
+        "results.context_make_original": "Сделать оригиналом",
         "results.export_title": "Экспорт CSV",
         "results.export_dialog_title": "Экспорт CSV",
         "results.export_filename": "duplicates_report.csv",
@@ -316,6 +318,10 @@ TRANSLATIONS = {
         "dashboard.category_audio": "Аудио",
         "dashboard.category_archive": "Архивы",
         "dashboard.category_other": "Прочее",
+        "dashboard.tooltip_files": "Файлов",
+        "dashboard.tooltip_file": "Файл",
+        "dashboard.tooltip_group_size": "Размер группы",
+        "dashboard.tooltip_month": "Месяц",
 
         # --- settings_dialog.py ---
         "settings.title": "Настройки",
@@ -354,6 +360,8 @@ TRANSLATIONS = {
         # --- sidebar.py ---
         "nav.help": "  Справка",
         "nav.tooltip.help": "Справка по использованию приложения",
+        "nav.activate_pro": "  Активировать Pro",
+        "nav.pro": "  Pro",
 
         # --- batch_dialog.py ---
 
@@ -415,6 +423,39 @@ TRANSLATIONS = {
         "preview.docx_failed": "(не удалось прочитать DOCX)",
         "preview.pptx_failed": "(не удалось прочитать PPTX)",
         "preview.xlsx_failed": "(не удалось прочитать XLSX)",
+        "preview.make_original": "Сделать оригиналом",
+        "preview.make_original_tooltip": "Сделать выбранный файл оригиналом в этой группе",
+        "preview.original_marked": "★ Оригинал",
+        "preview.original_protected": "Оригинал нельзя удалить",
+        "preview.original_delete_blocked": "Этот файл является оригиналом в группе. Его нельзя удалить.",
+        "preview.original_delete_blocked_title": "Защита оригинала",
+        "preview.original_confirm": "Вы уверены, что хотите сделать этот файл оригиналом?\n\n{name}",
+        "preview.original_changed": "Оригинал группы изменён",
+        "preview.original_changed_msg": "Новый оригинал: {name}",
+        "preview.change_original_btn": "Заменить оригинал",
+        "preview.change_original_tooltip": "Отметьте файл чекбоксом и нажмите, чтобы сделать его новым оригиналом",
+        "preview.change_original_info_title": "Информация",
+        "preview.change_original_already": "Этот файл уже является оригиналом.",
+
+        # --- results_page.py ---
+
+        "results.original_label": "★ Оригинал",
+        "results.original_tooltip": "Этот файл является оригиналом в группе",
+        "results.original_delete_blocked": "Оригинал нельзя удалить.\nСнимите отметку с оригинала или выберите другой файл как оригинал.",
+        "results.original_delete_blocked_title": "Защита оригинала",
+        "results.original_protected": "Оригинал защищён от удаления",
+        "results.make_original": "Сделать оригиналом",
+        "results.make_original_tooltip": "Сделать выбранный файл оригиналом в этой группе",
+        "results.original_changed": "Оригинал группы изменён",
+        "results.original_changed_msg": "Новый оригинал: {name}",
+
+        # --- batch_dialog.py ---
+        "batch.original_label": "★ Оригинал",
+        "batch.original_tooltip": "Этот файл является оригиналом — действие не применяется",
+
+        # --- file_ops.py ---
+        "fileops.original_protected": "Пропущен оригинал (защита): {name}",
+
 
         # --- scanner.py ---
         "scanner.folder_not_found": "Ошибка: Папка не найдена.",
@@ -626,8 +667,10 @@ TRANSLATIONS = {
         "results.delete_result": "Files deleted: {deleted}",
         "results.deleted_multiple_msg": "Files deleted: {deleted}",
         "results.deleted_errors": "\nErrors: {errors}",
+        "results.deleted_skipped": "\nSkipped originals: {skipped}",
         "results.delete_errors": "\nErrors: {errors}",
         "results.result_title": "Result",
+        "results.context_make_original": "Make Original",
         "results.export_title": "Export CSV",
         "results.export_dialog_title": "Export CSV",
         "results.export_filename": "duplicates_report.csv",
@@ -718,6 +761,10 @@ TRANSLATIONS = {
         "dashboard.category_audio": "Audio",
         "dashboard.category_archive": "Archives",
         "dashboard.category_other": "Other",
+        "dashboard.tooltip_files": "Files",
+        "dashboard.tooltip_file": "File",
+        "dashboard.tooltip_group_size": "Group size",
+        "dashboard.tooltip_month": "Month",
 
         # --- settings_dialog.py ---
         "settings.title": "Settings",
@@ -756,6 +803,8 @@ TRANSLATIONS = {
         # --- sidebar.py ---
         "nav.help": "  Help",
         "nav.tooltip.help": "Application usage help",
+        "nav.activate_pro": "  Activate Pro",
+        "nav.pro": "  Pro",
 
         # --- batch_dialog.py ---
         "batch.title": "Batch Duplicate Processing",
@@ -817,6 +866,39 @@ TRANSLATIONS = {
         "preview.docx_failed": "(could not read DOCX)",
         "preview.pptx_failed": "(could not read PPTX)",
         "preview.xlsx_failed": "(could not read XLSX)",
+        "preview.make_original": "Make Original",
+        "preview.make_original_tooltip": "Make the selected file the original in this group",
+        "preview.original_marked": "\u2605 Original",
+        "preview.original_protected": "Original cannot be deleted",
+        "preview.original_delete_blocked": "This file is the original in the group. It cannot be deleted.",
+        "preview.original_delete_blocked_title": "Original Protection",
+        "preview.original_confirm": "Are you sure you want to make this file the original?\n\n{name}",
+        "preview.original_changed": "Group original changed",
+        "preview.original_changed_msg": "New original: {name}",
+        "preview.change_original_btn": "Change Original",
+        "preview.change_original_tooltip": "Check a file and click to make it the new original",
+        "preview.change_original_info_title": "Information",
+        "preview.change_original_already": "This file is already the original.",
+
+        # --- results_page.py ---
+
+        "results.original_label": "\u2605 Original",
+        "results.original_tooltip": "This file is the original in the group",
+        "results.original_delete_blocked": "Original cannot be deleted.\nUncheck the original or select another file as original.",
+        "results.original_delete_blocked_title": "Original Protection",
+        "results.original_protected": "Original protected from deletion",
+        "results.make_original": "Make Original",
+        "results.make_original_tooltip": "Make the selected file the original in this group",
+        "results.original_changed": "Group original changed",
+        "results.original_changed_msg": "New original: {name}",
+
+        # --- batch_dialog.py ---
+        "batch.original_label": "\u2605 Original",
+        "batch.original_tooltip": "This file is the original \u2014 action not applied",
+
+        # --- file_ops.py ---
+        "fileops.original_protected": "Skipped original (protected): {name}",
+
 
         # --- scanner.py ---
         "scanner.folder_not_found": "Error: Folder not found.",

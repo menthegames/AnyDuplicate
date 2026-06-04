@@ -23,9 +23,10 @@ class MainPage(QWidget):
     log_signal = Signal(str)
     progress_signal = Signal(int)  # сигнал для обновления прогресса из потока
 
-    def __init__(self, config, parent=None):
+    def __init__(self, config, license_manager=None, parent=None):
         super().__init__(parent)
         self.config = config
+        self.license_manager = license_manager
         self.scanner = None
         self._setup_ui()
         self._load_config()
